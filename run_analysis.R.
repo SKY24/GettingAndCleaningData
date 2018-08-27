@@ -1,0 +1,88 @@
+# import library
+library(dplyr)
+
+#download the data and extract it (mac)
+download_url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+filename <- "UCI_HAR_Dataset.zip"
+
+download.file(download_url, destfile = filename, method = 'curl')
+
+unzip('UCI_HAR_Dataset.zip')
+
+#1 read in global data
+#read in activity labels and add descriptive names
+activity_labels<-read.table("UCI HAR Dataset/activity_labels.txt", stringsAsFactors=FALSE)
+names(activity_labels)<-c("activity_id", "activity_name")
+
+#read in the feature list
+feature <- read.table("UCI HAR Dataset/features.txt", col.names=c("feature_id", "feature_name"), stringsAsFactors=FALSE)
+
+#2 read in test data
+test_activity <- read.table("UCI HAR Dataset/test/y_test.txt")
+
+test_subject  <- read.table("UCI HAR Dataset/test/subject_test.txt")
+
+test_features <- read.table("UCI HAR Dataset/test/X_test.txt")
+
+#3 read train data
+                           
+train_activity <- read.table("UCI HAR Dataset/train/y_train.txt")
+                            
+train_subject  <- read.table("UCI HAR Dataset/train/subject_train.txt")
+                           
+train_features <- read.table("UCI HAR Dataset/train/X_train.txt")
+
+#4 merge test, train data sets
+#use row bind to merge the test and train data
+features_merged <- rbind(test_features, train_features)
+activity_merged <- rbind(test_activity, train_activity)
+subject_merged  <- rbind(test_subject,  train_subject)
+
+# column names are added to avoid the duplicate column names across data frames
+names(subject_merged) <- "subject"
+names(activity_merged) <- "activity"
+
+# use column bind to merge all data together as a single data set
+merged <- cbind(features_merged, activity_merged, subject_merged)
+
+
+# 5 extract only the mean and std for every measurement
+
+# use the global feature data read from 'features.txt' to identify which columns are of our interest about mean() and std()
+selected_features <- feature[grep('mean\\(\\)|std\\(\\)', feature$feature_name),]
+selected_columns <- selected_features[,1]
+
+extracted <- select(merged, c(activity, subject, selected_columns))
+
+# 6 
+#add descriptive activity names to the activities in the data set by joining the merged data set with the activity_labels data frame
+merged_with_name <- select(merge(activity_labels, extracted, by.x="activity_id", by.y="activity", all=TRUE), -activity_id)
+
+# label the data set with descriptive variable names
+selected_column_names <- gsub("\\(\\)", "", gsub("-", ".", selected_features[,2]))
+names(merged_with_name) <- c("activity", "subject", selected_column_names)
+
+
+# create a new tidy data set with the average of each variable for each activity and each subject
+
+# group the data by unique combination of activity and subject
+grouped <- group_by(merged_with_name, activity, subject)
+
+# this is to generate the R command string like this
+#   "summarise(grouped, tBodyAcc.mean.X=mean(tBodyAcc.mean.X), tBodyAcc.mean.Y=mean(tBodyAcc.mean.Y), ... ... )"
+r_cmd_str <- 'summarise(grouped'
+
+for (name in selected_column_names)
+{
+  r_cmd_str <- paste(r_cmd_str, ', ', name, '=mean(', name, ')', sep='')
+}
+
+r_cmd_str_end <- ')'
+r_cmd_str <- paste(r_cmd_str, r_cmd_str_end)
+
+# execute the R command string to get the tidy data set
+tidy_data <- eval(parse(text = r_cmd_str))
+
+# 5 write the data set to a file named "tidydata.txt"
+names(tidy_data) <- c("activity", "subject", selected_features[,2])
+write.table(tidy_data, file = 'tidydata.txt', row.name = FALSE)
