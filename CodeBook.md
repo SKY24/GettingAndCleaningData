@@ -107,6 +107,6 @@ Description of steps undertaken to clean and reshape the data:
   
 ##### Step 6 Create a second, tidy data set with the average of each variable for each activity and each subject.
 
-##### Step 7 : Final Step Appropriately labels the data set with descriptive variable names.
+##### Step 7 : Final Step Write the new tidy data set
 
   * the new tidy data is written to "tidydata.txt"
