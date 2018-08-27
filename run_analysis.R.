@@ -83,6 +83,6 @@ r_cmd_str <- paste(r_cmd_str, r_cmd_str_end)
 # execute the R command string to get the tidy data set
 tidy_data <- eval(parse(text = r_cmd_str))
 
-# 5 write the data set to a file named "tidydata.txt"
+# 7 write the data set to a file named "tidydata.txt"
 names(tidy_data) <- c("activity", "subject", selected_features[,2])
 write.table(tidy_data, file = 'tidydata.txt', row.name = FALSE)
